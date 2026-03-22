@@ -18,6 +18,7 @@ class RRT:
         self.nodes = [self.start]
         self.obstacles = obstacles
         self.sampled_points=[]
+        self.model = None
     
     def distance(self,n1,n2):
         return np.hypot(n1.x-n2.x,n1.y-n2.y)
@@ -44,6 +45,16 @@ class RRT:
                     best.x + np.random.uniform(-1,1),
                     best.y + np.random.uniform(-1,1)
                 )
+        
+        elif r<0.8 and self.model is not None:
+            for _ in range(10):
+                x=np.random.uniform(0,10)
+                y=np.random.uniform(0,10)
+                
+                pred=self.model.predict([[x,y]])[0]
+                
+                if pred==1:
+                    return (x,y)
         else:
             # Obstacle free random sampling
             while True:
