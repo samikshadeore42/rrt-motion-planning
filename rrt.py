@@ -17,14 +17,48 @@ class RRT:
         self.max_iter = max_iter
         self.nodes = [self.start]
         self.obstacles = obstacles
+        self.sampled_points=[]
     
     def distance(self,n1,n2):
         return np.hypot(n1.x-n2.x,n1.y-n2.y)
     
     def get_random_point(self):
-        if np.random.rand() < 0.1:
-            return (self.goal.x, self.goal.y)
-        return np.random.uniform(0,10), np.random.uniform(0,10)
+        r= np.random.rand()
+        
+        # goal bias
+        if r<0.2:
+            return (self.goal.x,self.goal.y)
+        #direction bias
+        elif r<0.4:
+            dx=self.goal.x-self.start.x
+            dy=self.goal.y-self.start.y
+            return (
+                self.start.x + np.random.rand() *dx,
+                self.start.y + np.random.rand() *dy
+            )
+        
+        elif r<0.6:
+            best = self.get_promising_node()
+            if best:
+                return (
+                    best.x + np.random.uniform(-1,1),
+                    best.y + np.random.uniform(-1,1)
+                )
+        else:
+            # Obstacle free random sampling
+            while True:
+                x = np.random.uniform(0,10)
+                y = np.random.uniform(0,10)
+            
+                # check for insiide obstacle
+                collision = False
+                for(ox,oy,r) in self.obstacles:
+                    if np.hypot(x-ox,y-oy) <=r:
+                        collision = True
+                        break
+            
+                if not collision:
+                    return (x,y)
 
     def get_nearest_node(self,point):
         distances = [(node.x - point[0])**2 + (node.y - point[1])**2 for node in self.nodes]
@@ -36,6 +70,11 @@ class RRT:
             if self.distance(node,new_node) <=radius:
                 nearby.append(node)
         return nearby
+    
+    def get_promising_node(self):
+        if len(self.nodes) < 5:
+            return None
+        return min(self.nodes,key=lambda n: n.cost)
     
     def steer(self,from_node,to_point):
         direction = np.array([to_point[0]- from_node.x, to_point[1] - from_node.y])
@@ -91,7 +130,7 @@ class RRT:
             rand_point = self.get_random_point()
             nearest = self.get_nearest_node(rand_point)
             new_node = self.steer(nearest,rand_point)
-        
+            self.sampled_points = []
             if not is_collision_free(nearest,new_node,self.obstacles):
                 continue
         
@@ -100,7 +139,7 @@ class RRT:
             new_node= self.choose_best_parent(new_node,nearby)
             
             self.nodes.append(new_node)
-            
+            self.sampled_points.append((new_node.x,new_node.y))
             self.rewire(new_node,nearby)
             
             if self.is_goal_reached(new_node):
@@ -122,6 +161,5 @@ class RRT:
             node=node.parent
         
         return path[::-1]
-
     
         

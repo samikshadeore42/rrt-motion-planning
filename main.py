@@ -3,6 +3,7 @@ from visualisation import plot_tree
 from visualisation import animate_tree
 from utils import path_length
 import matplotlib.pyplot as plt
+import numpy as np
 
 iterations=[]
 costs=[]
